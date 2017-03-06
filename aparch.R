@@ -14,20 +14,35 @@ garchDist = function(z, hh) {
   LL
 }
 
-# Given parameters, calculate the log-likelihood of Tx
-
 aparchLLH = function(params) {
-  mu = params[1]; omega = params[2]; alpha = params[3]; gam1=params[4]; beta = params[5]; delta=params[6]
+  # Given parameters, calculate the log-likelihood of Tx
   
-  # NOT SURE WHY WE INITIALISE EPS WITH THIS MEAN 
-  z = (Tx-mu); Mean = mean((abs(z) - gam1*z)**delta)
+  mu = params[1]; omega = params[2]; alpha = params[3]; gam1=params[4]; beta = params[5]; delta=params[6]
+
+  z = (Tx-mu); Mean = mean((abs(z) - gam1*z)**delta)  # NOT SURE WHY WE INITIALISE EPS WITH THIS MEAN 
+  
   # Use Filter Representation:
   eps = c(Mean, z[-length(z)])
+  N = length(eps)
   e = omega + alpha*( abs( eps ) - gam1*eps )**delta 
-  sigma = filter(e, beta, "r", init = Mean)
+  
+  #sigma = filter(e, beta, "r", init = Mean)
+  
+  # filter with init=Mean sets
+  # sigma[1] = beta*Mean + e[1]
+  # sigma[2] = beta*h[1] + e[2]
+  # ...
+  # So we can use the following for loop instead
+  sigma = beta*Mean + e[1]
+  sigma = rep(sigma,N)
+  for(i in 2:N){
+    sigma[i] = beta*sigma[i-1] + e[i]
+  }
+  # I think the actual value of Mean is slightly arbitrary
+  
   hh = abs(sigma)**(1/delta)
   llh = -sum(log(garchDist(z, hh)))
-  llh 
+  return(llh)
 }
 
 aparch11 = function(x) {
