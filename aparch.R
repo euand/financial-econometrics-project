@@ -7,37 +7,41 @@ x <- ( log(price[2:length(price)]) - log(price[1:(length(price)-1)]) ) * 100
 
 source('/home/euan/documents/financial-econ/financial-econometrics-project/tarch.R')
 
+# First define the conditional likelihood of observing z given sigma
+
+garchDist = function(z, hh) { 
+  LL=dnorm(x = z/hh)/hh 
+  LL
+}
+
+# Given parameters, calculate the log-likelihood of Tx
+
+aparchLLH = function(params) {
+  mu = params[1]; omega = params[2]; alpha = params[3]; gam1=params[4]; beta = params[5]; delta=params[6]
+  z = (Tx-mu); Mean = mean(abs(z)**delta)
+  # Use Filter Representation:
+  eps = c(Mean, z[-length(z)])
+  e = omega + alpha * ( abs( eps ) - gam1*eps )**delta 
+  h = filter(e, beta, "r", init = Mean)
+  hh = abs(h)**(1/delta)
+  llh = -sum(log(garchDist(z, hh)))
+  llh 
+}
+
 aparch11 = function(x) {
   # Estimation of APARCH(1,1) model with Gaussian innovations
   # Step 1: Initialize Time Series Globally:
   
   Tx <<- x
   
-  # Step 2: Initialize Model Parameters and Bounds:
+  # Step 1: Initialize Model Parameters and Bounds:
   Meanx = mean(Tx); Varx = var(Tx); S = 1e-6
 
   params = c(mu = Meanx, omega = 0.1*Varx, alpha = 0.1, gam1= 0.02, beta = 0.81,delta=1)
   lowerBounds = c(mu = -10*abs(Meanx), omega = S^2, alpha = S, gam1=S, beta = S,delta=0.1)
   upperBounds = c(mu = 10*abs(Meanx), omega = 10*Varx, alpha = 1-S, gam1 = 1-S, beta = 1-S,delta=5)
   
-  # Step 3: Set Conditional Distribution Function:
-  garchDist = function(z, hh) { 
-      LL=dnorm(x = z/hh)/hh 
-    LL
-  }
-  
-  # Step 4: Compose log-Likelihood Function:
-  aparchLLH = function(parm) {
-    mu = parm[1]; omega = parm[2]; alpha = parm[3]; gam1=parm[4]; beta = parm[5]; delta=parm[6]
-    z = (Tx-mu); Mean = mean(abs(z)**delta)
-    # Use Filter Representation:
-    e = omega + alpha * ( abs( c(Mean, z[-length(z)]) ) - gam1*c(Mean,z[-length(z)]) )**delta 
-    h = filter(e, beta, "r", init = Mean)
-    hh = abs(h)**(1/delta)
-    llh = -sum(log(garchDist(z, hh)))
-    llh }
-  
-  # Step 5: Estimate Parameters and Compute Numerically Hessian:
+  # Step 2: Estimate Parameters and Compute Numerically Hessian:
   fit = nlminb(start = params, objective = aparchLLH,
                lower = lowerBounds, upper = upperBounds) ### control = list(trace=3))
   epsilon = 0.0001 * fit$par
