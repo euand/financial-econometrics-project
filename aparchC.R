@@ -78,4 +78,5 @@ APARCH.fit <- function(x){
 
 APARCH.fit(x)
 
-aparch.filter(x,param)$loglik
+aparchLLH(params)
+llh(params)
