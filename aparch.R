@@ -1,17 +1,30 @@
 rm(list=ls())
 
+setwd('/home/euan/documents/financial-econ/financial-econometrics-project/')
+
 data <- read.csv('/home/euan/documents/financial-econ/data/tickers/DBB.csv')
 data    <- data[seq(nrow(data),1,-1),]
 price   <- data$Adj.Close
 x <- ( log(price[2:length(price)]) - log(price[1:(length(price)-1)]) ) * 100
 
-source('/home/euan/documents/financial-econ/financial-econometrics-project/tarch.R')
+source('tarch.R')
+source('aparchC.R')
 
 # First define the conditional likelihood of observing z given sigma
 
 garchDist = function(z, hh) { 
-  LL=dnorm(x = z/hh)/hh 
+  LL=dnorm(x = z, sd = hh)
   LL
+}
+
+aparchLLH = function(params){
+  mu = params[1]; omega = params[2]; alpha = params[3]; gam1=params[4]; beta = params[5]; delta=params[6]
+  
+  z = Tx - mu
+  Mean = mean(z^2)
+  eps_m = c(Mean, z[-length(z)])
+  e = omega + alpha*( abs( eps ) - gam1*eps )**delta 
+  sigma = beta*Mean + e[1]
 }
 
 aparchLLH = function(params) {
@@ -19,7 +32,7 @@ aparchLLH = function(params) {
   
   mu = params[1]; omega = params[2]; alpha = params[3]; gam1=params[4]; beta = params[5]; delta=params[6]
 
-  z = (Tx-mu); Mean = mean((abs(z) - gam1*z)**delta)  # NOT SURE WHY WE INITIALISE EPS WITH THIS MEAN 
+  z = (Tx-mu); Mean = mean(z[1:10]^2)  # NOT SURE WHY WE INITIALISE EPS WITH THIS MEAN 
   
   # Use Filter Representation:
   eps = c(Mean, z[-length(z)])
@@ -33,7 +46,8 @@ aparchLLH = function(params) {
   # sigma[2] = beta*h[1] + e[2]
   # ...
   # So we can use the following for loop instead
-  sigma = beta*Mean + e[1]
+  #sigma = beta*Mean + e[1]
+  sigma = beta*Mean
   sigma = rep(sigma,N)
   for(i in 2:N){
     sigma[i] = beta*sigma[i-1] + e[i]
