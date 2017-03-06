@@ -18,12 +18,14 @@ garchDist = function(z, hh) {
 
 aparchLLH = function(params) {
   mu = params[1]; omega = params[2]; alpha = params[3]; gam1=params[4]; beta = params[5]; delta=params[6]
-  z = (Tx-mu); Mean = mean(abs(z)**delta)
+  
+  # NOT SURE WHY WE INITIALISE EPS WITH THIS MEAN 
+  z = (Tx-mu); Mean = mean((abs(z) - gam1*z)**delta)
   # Use Filter Representation:
   eps = c(Mean, z[-length(z)])
-  e = omega + alpha * ( abs( eps ) - gam1*eps )**delta 
-  h = filter(e, beta, "r", init = Mean)
-  hh = abs(h)**(1/delta)
+  e = omega + alpha*( abs( eps ) - gam1*eps )**delta 
+  sigma = filter(e, beta, "r", init = Mean)
+  hh = abs(sigma)**(1/delta)
   llh = -sum(log(garchDist(z, hh)))
   llh 
 }
@@ -82,5 +84,7 @@ aparch11 = function(x) {
 aparch.fit <- aparch11(x)
 aparch.fit$par
 
-tarch.fit <- Tgarch11(x)
-tarch.fit$par
+#tarch.fit <- Tgarch11(x)
+#tarch.fit$par
+
+aparch.fit$par
