@@ -5,6 +5,8 @@ data    <- data[seq(nrow(data),1,-1),]
 price   <- data$Adj.Close
 x <- ( log(price[2:length(price)]) - log(price[1:(length(price)-1)]) ) * 100
 
+source('/home/euan/documents/financial-econ/financial-econometrics-project/tarch.R')
+
 aparch11 = function(x) {
   # Estimation of APARCH(1,1) model with Gaussian innovations
   # Step 1: Initialize Time Series Globally:
@@ -27,13 +29,11 @@ aparch11 = function(x) {
   # Step 4: Compose log-Likelihood Function:
   aparchLLH = function(parm) {
     mu = parm[1]; omega = parm[2]; alpha = parm[3]; gam1=parm[4]; beta = parm[5]; delta=parm[6]
-    z = (Tx-mu); Mean = mean(z)
-    zm1=c(0,z[-length(z)])
-    idx=seq(zm1)[zm1 < 0]; z1=rep(0,length(z)); z1[idx]=1
+    z = (Tx-mu); Mean = mean(abs(z)**delta)
     # Use Filter Representation:
     e = omega + alpha * ( abs( c(Mean, z[-length(z)]) ) - gam1*c(Mean,z[-length(z)]) )**delta 
     h = filter(e, beta, "r", init = Mean)
-    hh = sqrt(abs(h))
+    hh = abs(h)**(1/delta)
     llh = -sum(log(garchDist(z, hh)))
     llh }
   
@@ -56,6 +56,7 @@ aparch11 = function(x) {
   }
   cat("Log likelihood at MLEs: ","\n")
   print(-aparchLLH(fit$par))
+  
   # Step 6: Create and Print Summary Report:
   se.coef = sqrt(diag(solve(Hessian)))
   tval = fit$par/se.coef
@@ -66,14 +67,11 @@ aparch11 = function(x) {
   printCoefmat(matcoef, digits = 6, signif.stars = TRUE)
   # compute output
   est=fit$par
-  mu = est[1]; omega = est[2]; alpha = est[3]; gam1=est[4]; beta = est[5]
-  z=(Tx-mu); Mean = mean(z^2)
-  zm1=c(0,z[-length(z)])
-  idx=seq(zm1)[zm1 < 0]; z1=rep(0,length(z)); z1[idx]=1
-  e = omega + alpha * c(Mean, z[-length(z)]^2) + gam1*z1*c(Mean,z[-length(z)]^2)
+  mu = est[1]; omega = est[2]; alpha = est[3]; gam1=est[4]; beta = est[5]; delta = est[6]
+  z=(Tx-mu); Mean = mean(abs(z)**delta)
+  e = omega + alpha * ( abs( c(Mean, z[-length(z)]) ) - gam1*c(Mean,z[-length(z)]) )**delta 
   h = filter(e, beta, "r", init = Mean)
-  sigma.t = sqrt(abs(h))
-  
+  sigma.t = abs(h)**(1/delta)
   return(list(residuals = z, volatility = sigma.t, par=est))
 }
 
@@ -81,3 +79,4 @@ aparch.fit <- aparch11(x)
 aparch.fit$par
 
 tarch.fit <- Tgarch11(x)
+tarch.fit$par
