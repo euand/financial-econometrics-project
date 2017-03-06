@@ -1,5 +1,3 @@
-rm(list=ls())
-
 setwd('/home/euan/documents/financial-econ/financial-econometrics-project/')
 
 data <- read.csv('/home/euan/documents/financial-econ/data/tickers/DBB.csv')
@@ -12,53 +10,6 @@ source('aparchC.R')
 
 # First define the conditional likelihood of observing z given sigma
 
-garchDist = function(z, hh) { 
-  LL=dnorm(x = z, sd = hh)
-  LL
-}
-
-aparchLLH = function(params){
-  mu = params[1]; omega = params[2]; alpha = params[3]; gam1=params[4]; beta = params[5]; delta=params[6]
-  
-  z = Tx - mu
-  Mean = mean(z^2)
-  eps_m = c(Mean, z[-length(z)])
-  e = omega + alpha*( abs( eps ) - gam1*eps )**delta 
-  sigma = beta*Mean + e[1]
-}
-
-aparchLLH = function(params) {
-  # Given parameters, calculate the log-likelihood of Tx
-  
-  mu = params[1]; omega = params[2]; alpha = params[3]; gam1=params[4]; beta = params[5]; delta=params[6]
-
-  z = (Tx-mu); Mean = mean(z[1:10]^2)  # NOT SURE WHY WE INITIALISE EPS WITH THIS MEAN 
-  
-  # Use Filter Representation:
-  eps = c(Mean, z[-length(z)])
-  N = length(eps)
-  e = omega + alpha*( abs( eps ) - gam1*eps )**delta 
-  
-  #sigma = filter(e, beta, "r", init = Mean)
-  
-  # filter with init=Mean sets
-  # sigma[1] = beta*Mean + e[1]
-  # sigma[2] = beta*h[1] + e[2]
-  # ...
-  # So we can use the following for loop instead
-  #sigma = beta*Mean + e[1]
-  sigma = beta*Mean
-  sigma = rep(sigma,N)
-  for(i in 2:N){
-    sigma[i] = beta*sigma[i-1] + e[i]
-  }
-  # I think the actual value of Mean is slightly arbitrary
-  
-  hh = abs(sigma)**(1/delta)
-  llh = -sum(log(garchDist(z, hh)))
-  return(llh)
-}
-
 aparch11 = function(x) {
   # Estimation of APARCH(1,1) model with Gaussian innovations
   # Step 1: Initialize Time Series Globally:
@@ -68,13 +19,47 @@ aparch11 = function(x) {
   # Step 1: Initialize Model Parameters and Bounds:
   Meanx = mean(Tx); Varx = var(Tx); S = 1e-6
 
-  params = c(mu = Meanx, omega = 0.1*Varx, alpha = 0.1, gam1= 0.02, beta = 0.81,delta=1)
+  params = c(mu = Meanx, omega = 0.1*Varx, alpha = 0.1, gam1= 0.02, beta = 0.81,delta=2)
   lowerBounds = c(mu = -10*abs(Meanx), omega = S^2, alpha = S, gam1=S, beta = S,delta=0.1)
   upperBounds = c(mu = 10*abs(Meanx), omega = 10*Varx, alpha = 1-S, gam1 = 1-S, beta = 1-S,delta=5)
   
+  aparchLLH = function(params) {
+    # Given parameters, calculate the log-likelihood of Tx
+    
+    mu = params[1]; omega = params[2]; alpha = params[3]; gam1=params[4]; beta = params[5]; delta=params[6]
+    
+    z = (Tx-mu); Mean = mean(z[1:10]^2)  # NOT SURE WHY WE INITIALISE EPS WITH THIS MEAN 
+    
+    # Use Filter Representation:
+    eps = c(Mean, z[-length(z)])
+    N = length(eps)
+    e = omega + alpha*( abs( eps ) - gam1*eps )**delta 
+    
+    #sigma = filter(e, beta, "r", init = Mean)
+    
+    # filter with init=Mean sets
+    # sigma[1] = beta*Mean + e[1]
+    # sigma[2] = beta*h[1] + e[2]
+    # ...
+    # So we can use the following for loop instead
+    #sigma = beta*Mean + e[1]
+    sigma = beta*Mean
+    sigma = rep(sigma,N)
+    for(i in 2:N){
+      sigma[i] = beta*sigma[i-1] + e[i]
+    }
+    # I think the actual value of Mean is slightly arbitrary
+    
+    hh = abs(sigma)**(1/delta)
+    #llh = -sum(log(garchDist(z, hh)))
+    llh = -sum(log(dnorm(x=z, sd = hh)))
+    #llh    = -sum(-0.5 * log(2*pi) - (1/delta)*log(sigma**(1/delta)) -0.5*(z^2)/(sigma^(2/delta) ) )
+    return(llh)
+  }
+  
   # Step 2: Estimate Parameters and Compute Numerically Hessian:
   fit = nlminb(start = params, objective = aparchLLH,
-               lower = lowerBounds, upper = upperBounds) ### control = list(trace=3))
+               lower = lowerBounds, upper = upperBounds,  control = list(trace=3))
   epsilon = 0.0001 * fit$par
   npar=length(params)
   Hessian = matrix(0, ncol = npar, nrow = npar)
@@ -110,10 +95,4 @@ aparch11 = function(x) {
   return(list(residuals = z, volatility = sigma.t, par=est))
 }
 
-aparch.fit <- aparch11(x)
-aparch.fit$par
-
-#tarch.fit <- Tgarch11(x)
-#tarch.fit$par
-
-aparch.fit$par
+aparch.R <- aparch11(x)

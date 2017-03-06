@@ -1,3 +1,9 @@
+data <- read.csv('/home/euan/documents/financial-econ/data/tickers/DBB.csv')
+data    <- data[seq(nrow(data),1,-1),]
+price   <- data$Adj.Close
+x <- ( log(price[2:length(price)]) - log(price[1:(length(price)-1)]) ) * 100
+source('aparch.R')
+
 dyn.load("/home/euan/documents/financial-econ/financial-econometrics-project/APARCH.so")
 
 # Gaussian TARCH(1,1) functions
@@ -40,8 +46,8 @@ APARCH.fit <- function(x){
   upperBounds = c(mu = 10*abs(Meanx), omega = 10*Varx, alpha = 1-S, gam1 = 1-S, beta = 1-S,delta=5)
   # Step 2: Estimate Parameters and Compute Numerically Hessian:
   fit = nlminb(start = params, objective = llh,
-               lower = lowerBounds, upper = upperBounds) ### control = list(trace=3))
-  epsilon = 0.0001 * fit$par
+               lower = lowerBounds, upper = upperBounds, control = list(trace=3))
+  epsilon = 0.00001  * fit$par
   npar=length(params)
   Hessian = matrix(0, ncol = npar, nrow = npar)
   for (i in 1:npar) {
@@ -75,8 +81,3 @@ APARCH.fit <- function(x){
   
   return(list(residuals = z, volatility = sigma.t, par=est))
 }
-
-APARCH.fit(x)
-
-aparchLLH(params)
-llh(params)
