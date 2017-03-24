@@ -3,7 +3,7 @@ aparch11 = function(x) {
   # Step 1: Initialize Time Series Globally:
   
   Tx <<- x
-  T <- length(Tx)
+  N <- length(Tx)
   
   # Step 2: Initialize Model Parameters and Bounds:
   Meanx = mean(Tx); Varx = var(Tx); S = 1e-6
@@ -12,20 +12,43 @@ aparch11 = function(x) {
   lowerBounds = c(mu = -10*abs(Meanx), omega = S^2, alpha = S, gam1=-(1-S), beta = S,delta=0.1)
   upperBounds = c(mu = 10*abs(Meanx), omega = 10*Varx, alpha = 1-S, gam1 = 1-S, beta = 1-S,delta=5)
   
-  aparchLLH = function(params) {
+  aparchLLH <- function(params) {
+    
+    if( any(!is.finite(params)) ){ 
+      return( Inf ) 
+    }  
     # Given parameters, calculate the log-likelihood of Tx
     mu = params[1]; omega = params[2]; alpha = params[3]; gam1=params[4]; beta = params[5]; delta=params[6]
     
-    z = (Tx-mu); Mean = mean(z[1:10]^2)  # NOT SURE WHY WE INITIALISE EPS WITH THIS MEAN 
+    if( params['alpha'] + params['beta'] > 1){return(Inf)}
     
-    eps = c(Mean, z[-T])
+    z = (Tx-mu); Mean = mean(z[1:10]**2) 
+    
+    eps = c(Mean, z[-N])
     e = omega + alpha*( abs( eps ) - gam1*eps )**delta 
-    sigma = beta*Mean
-    sigma = rep(sigma,T)
-    for(i in 2:T){
+    sigma = Mean^(delta/2)
+    sigma = rep(sigma,N)
+    for(i in 2:N){
       sigma[i] = beta*sigma[i-1] + e[i]
     }
+    hh = abs(sigma)**(1/delta)
+    llh = -sum(log(dnorm(x=z, sd = hh)))
+    return(llh)
+  }
+  
+  aparchLLH_hessian <- function(params) {
+    # Given parameters, calculate the log-likelihood of Tx
+    mu = params[1]; omega = params[2]; alpha = params[3]; gam1=params[4]; beta = params[5]; delta=params[6]
     
+    z = (Tx-mu); Mean = mean(z[1:10]**2) 
+    
+    eps = c(Mean, z[-N])
+    e = omega + alpha*( abs( eps ) - gam1*eps )**delta 
+    sigma = Mean^(delta/2)
+    sigma = rep(sigma,N)
+    for(i in 2:N){
+      sigma[i] = beta*sigma[i-1] + e[i]
+    }
     hh = abs(sigma)**(1/delta)
     llh = -sum(log(dnorm(x=z, sd = hh)))
     return(llh)
@@ -44,7 +67,7 @@ aparch11 = function(x) {
       x2[i] = x2[i] + epsilon[i]; x2[j] = x2[j] - epsilon[j]
       x3[i] = x3[i] - epsilon[i]; x3[j] = x3[j] + epsilon[j]
       x4[i] = x4[i] - epsilon[i]; x4[j] = x4[j] - epsilon[j]
-      Hessian[i, j] = (aparchLLH(x1)-aparchLLH(x2)-aparchLLH(x3)+aparchLLH(x4))/
+      Hessian[i, j] = (aparchLLH_hessian(x1)-aparchLLH_hessian(x2)-aparchLLH_hessian(x3)+aparchLLH_hessian(x4))/
         (4*epsilon[i]*epsilon[j])
     }
   }
