@@ -38,12 +38,12 @@ fit$summary
 # - the residuals of the fitted model
 fit$residuals
 
-# - the estimated volatility for each period
+# - the estimated (standard deviation)^delta for each period
 fit$volatility
-# and we can see how the estimated volatilities compare to the inputs used to generate the data:
-mean(fit$volatility[1:4000]) # compares to variance of 1 used in data generation
-mean(fit$volatility[4001:6000]) # compares to variance of 1.6 used in data generation
-mean(fit$volatility[6001:10000]) # compares to variance of 0.6 used in data
+# and we can see how the estimated standard devitions compare to the inputs used to generate the data:
+mean(((fit$volatility)^(1/fit$par[6]))[1:4000]) # compares to standard deviation of 1 used in data generation
+mean(((fit$volatility)^(1/fit$par[6]))[4001:6000]) # compares to standard deviation of 1.6 used in data generation
+mean(((fit$volatility)^(1/fit$par[6]))[6001:10000]) # compares to standard deviation of 0.6 used in data generation
 
 # - the individual parameter estimates
 fit$par
