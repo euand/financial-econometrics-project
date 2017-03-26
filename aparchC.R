@@ -1,9 +1,10 @@
 setwd('/home/euan/documents/financial-econ/financial-econometrics-project/')
 source('aparch.R')
+source('tarch.R')
 dyn.load("APARCH.so")
 
-#data  <- read.csv('../data/tickers/DBB.csv')
-data  <- read.csv('../data/tickers/AA.csv')
+data  <- read.csv('../data/tickers/BMY.csv')
+
 data  <- data[seq(nrow(data),1,-1),]
 price <- data$Adj.Close
 x     <- ( log(price[2:length(price)]) - log(price[1:(length(price)-1)]) ) * 100
@@ -60,8 +61,8 @@ APARCH.fit <- function(x){
   Meanx = mean(Tx); Varx = var(Tx); S = 1e-6
   
   params_init = c(mu = Meanx, omega = 0.1*Varx, alpha = 0.1, gam1= 0.02, beta = 0.81,delta=2)
-  lowerBounds = c(mu = -10*abs(Meanx), omega = S^2, alpha = S, gam1= -(1-S), beta = S,delta=0.1)
-  upperBounds = c(mu = 10*abs(Meanx), omega = 10*Varx, alpha = 1-S, gam1 = (1-S), beta = 1-S,delta=5)
+  lowerBounds = c(mu = -10*abs(Meanx), omega = S, alpha = S, gam1= -(1-S), beta = S,delta=0.1)
+  upperBounds = c(mu = 10*abs(Meanx), omega = 10*Varx, alpha = 1-S, gam1 = (1-S), beta = 1-S,delta=4)
   
   # Optimise -log-likelihood and calculate Hessian matrix
   
@@ -92,4 +93,5 @@ APARCH.fit <- function(x){
 
 ap.C <- APARCH.fit(x)
 ap.R <- aparch11(x)
+
 

@@ -9,7 +9,7 @@ aparch11 = function(x) {
   Meanx = mean(Tx); Varx = var(Tx); S = 1e-6
 
   params      = c(mu = Meanx, omega = 0.1*Varx, alpha = 0.1, gam1= 0.02, beta = 0.81,delta=2)
-  lowerBounds = c(mu = -10*abs(Meanx), omega = S^2, alpha = S, gam1=-(1-S), beta = S,delta=0.1)
+  lowerBounds = c(mu = -10*abs(Meanx), omega = S, alpha = S, gam1=-(1-S), beta = S,delta=0.1)
   upperBounds = c(mu = 10*abs(Meanx), omega = 10*Varx, alpha = 1-S, gam1 = 1-S, beta = 1-S,delta=5)
   
   aparchLLH <- function(params) {
@@ -21,8 +21,8 @@ aparch11 = function(x) {
     mu = params[1]; omega = params[2]; alpha = params[3]; gam1=params[4]; beta = params[5]; delta=params[6]
 
     z = (Tx-mu); Mean = mean(z[1:10]**2) 
-    
-    eps = c(Mean, z[-N])
+    eps1 <- (sum(abs(z)))
+    eps = c(mean(z), z[-N])
     e = omega + alpha*( abs( eps ) - gam1*eps )**delta 
     sigma = Mean^(delta/2)
     sigma = rep(sigma,N)
@@ -30,6 +30,14 @@ aparch11 = function(x) {
       sigma[i] = beta*sigma[i-1] + e[i]
     }
     hh = abs(sigma)**(1/delta)
+    
+    if(any(log(dnorm(x=z, sd = hh)) == -Inf)){
+      #controls for errors in input data
+      idx <- which(log(dnorm(x=z, sd = hh)) == -Inf)
+      z   <- z[-idx]
+      hh  <- hh[-idx]
+    }
+    
     llh = -sum(log(dnorm(x=z, sd = hh)))
     return(llh)
   }
@@ -55,7 +63,7 @@ aparch11 = function(x) {
   print(-aparchLLH(fit$par))
   
   # Step 6: Create and Print Summary Report:
-  se.coef = sqrt(diag(solve(Hessian)))
+  se.coef = sqrt(abs(diag(solve(Hessian))))
   tval = fit$par/se.coef
   matcoef = cbind(fit$par, se.coef, tval, 2*(1-pnorm(abs(tval))))
   dimnames(matcoef) = list(names(tval), c(" Estimate",
