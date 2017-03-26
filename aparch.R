@@ -1,4 +1,4 @@
-aparch11 = function(x) {
+APARCH.fit.R = function(x) {
   # Estimation of APARCH(1,1) model with Gaussian innovations
   # Step 1: Initialize Time Series Globally:
   
@@ -6,7 +6,7 @@ aparch11 = function(x) {
   N <- length(Tx)
   
   # Step 2: Initialize Model Parameters and Bounds:
-  Meanx = mean(Tx); Varx = var(Tx); S = 1e-6
+  Meanx = mean(Tx); Varx = var(Tx); S = 1e-3
 
   params      = c(mu = Meanx, omega = 0.1*Varx, alpha = 0.1, gam1= 0.02, beta = 0.81,delta=2)
   lowerBounds = c(mu = -10*abs(Meanx), omega = S, alpha = S, gam1=-(1-S), beta = S,delta=0.1)
@@ -30,13 +30,6 @@ aparch11 = function(x) {
       sigma[i] = beta*sigma[i-1] + e[i]
     }
     hh = abs(sigma)**(1/delta)
-    
-    if(any(log(dnorm(x=z, sd = hh)) == -Inf)){
-      #controls for errors in input data
-      idx <- which(log(dnorm(x=z, sd = hh)) == -Inf)
-      z   <- z[-idx]
-      hh  <- hh[-idx]
-    }
     
     llh = -sum(log(dnorm(x=z, sd = hh)))
     return(llh)

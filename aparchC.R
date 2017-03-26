@@ -1,13 +1,6 @@
-setwd('/home/euan/documents/financial-econ/financial-econometrics-project/')
-source('aparch.R')
-source('tarch.R')
+#setwd('/home/euan/documents/financial-econ/financial-econometrics-project/')
+
 dyn.load("APARCH.so")
-
-data  <- read.csv('../data/tickers/BMY.csv')
-
-data  <- data[seq(nrow(data),1,-1),]
-price <- data$Adj.Close
-x     <- ( log(price[2:length(price)]) - log(price[1:(length(price)-1)]) ) * 100
 
 aparch.filter <- function( x , params ){
   
@@ -37,7 +30,7 @@ llh <- function(params){
 }
 
 Hessian <- function(par){
-  epsilon = 0.00001  * par
+  epsilon = 0.0001  * par
   npar=length(par)
   hess = matrix(0, ncol = npar, nrow = npar)
   for (i in 1:npar) {
@@ -54,11 +47,11 @@ Hessian <- function(par){
   return(hess)
 }
 
-APARCH.fit <- function(x){
+APARCH.fit.C <- function(x){
   
   # Initialise parameters and set bounds
   Tx <<- x
-  Meanx = mean(Tx); Varx = var(Tx); S = 1e-6
+  Meanx = mean(Tx); Varx = var(Tx); S = 1e-3
   
   params_init = c(mu = Meanx, omega = 0.1*Varx, alpha = 0.1, gam1= 0.02, beta = 0.81,delta=2)
   lowerBounds = c(mu = -10*abs(Meanx), omega = S, alpha = S, gam1= -(1-S), beta = S,delta=0.1)
@@ -68,7 +61,7 @@ APARCH.fit <- function(x){
   
   fit = nlminb(start = params_init, objective = llh,
                lower = lowerBounds, upper = upperBounds) # , control = list(trace=3))
-  
+  fit$par
   hess <- Hessian(fit$par) 
   
   cat("Log likelihood at MLEs: ","\n")
@@ -90,8 +83,3 @@ APARCH.fit <- function(x){
   
   return(list(summary = matcoef, residuals = z, volatility = sigma.t, par=est, n.loglik = -fit$obj))
 }
-
-ap.C <- APARCH.fit(x)
-ap.R <- aparch11(x)
-
-
