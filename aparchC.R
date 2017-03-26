@@ -1,9 +1,9 @@
-rm(list=ls())
 setwd('/home/euan/documents/financial-econ/financial-econometrics-project/')
 source('aparch.R')
 dyn.load("APARCH.so")
 
-data  <- read.csv('../data/tickers/DBB.csv')
+#data  <- read.csv('../data/tickers/DBB.csv')
+data  <- read.csv('../data/tickers/AA.csv')
 data  <- data[seq(nrow(data),1,-1),]
 price <- data$Adj.Close
 x     <- ( log(price[2:length(price)]) - log(price[1:(length(price)-1)]) ) * 100
@@ -35,28 +35,6 @@ llh <- function(params){
   return(-filter$loglik)
 }
 
-llh_hessian <- function(params ){
-  
-  T   <- length(Tx)
-  
-  if( any(!is.finite(params)) ){ 
-    filter = list( loglik=-Inf , sigma2=rep(NA,T) )    
-    return( filter ) 
-  }  
-  
-  result <- .C( 'aparch_filter_no_abconstraint', 
-                status = as.integer(0), 
-                sigma2 = as.double(rep(0,T)) , 
-                eps    = as.double(rep(0,T)) , 
-                loglik = as.double(0) , 
-                as.double(params) , 
-                as.double(Tx) , 
-                as.integer(T)
-  )
-  
-  return(-result$loglik)
-}
-
 Hessian <- function(par){
   epsilon = 0.00001  * par
   npar=length(par)
@@ -68,7 +46,7 @@ Hessian <- function(par){
       x2[i] = x2[i] + epsilon[i]; x2[j] = x2[j] - epsilon[j]
       x3[i] = x3[i] - epsilon[i]; x3[j] = x3[j] + epsilon[j]
       x4[i] = x4[i] - epsilon[i]; x4[j] = x4[j] - epsilon[j]
-      hess[i, j] = (llh_hessian(x1)-llh_hessian(x2)-llh_hessian(x3)+llh_hessian(x4))/
+      hess[i, j] = (llh(x1)-llh(x2)-llh(x3)+llh(x4))/
         (4*epsilon[i]*epsilon[j])
     }
   }

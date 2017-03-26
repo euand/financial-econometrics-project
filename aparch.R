@@ -19,27 +19,7 @@ aparch11 = function(x) {
     }  
     # Given parameters, calculate the log-likelihood of Tx
     mu = params[1]; omega = params[2]; alpha = params[3]; gam1=params[4]; beta = params[5]; delta=params[6]
-    
-    if( params['alpha'] + params['beta'] > 1){return(Inf)}
-    
-    z = (Tx-mu); Mean = mean(z[1:10]**2) 
-    
-    eps = c(Mean, z[-N])
-    e = omega + alpha*( abs( eps ) - gam1*eps )**delta 
-    sigma = Mean^(delta/2)
-    sigma = rep(sigma,N)
-    for(i in 2:N){
-      sigma[i] = beta*sigma[i-1] + e[i]
-    }
-    hh = abs(sigma)**(1/delta)
-    llh = -sum(log(dnorm(x=z, sd = hh)))
-    return(llh)
-  }
-  
-  aparchLLH_hessian <- function(params) {
-    # Given parameters, calculate the log-likelihood of Tx
-    mu = params[1]; omega = params[2]; alpha = params[3]; gam1=params[4]; beta = params[5]; delta=params[6]
-    
+
     z = (Tx-mu); Mean = mean(z[1:10]**2) 
     
     eps = c(Mean, z[-N])
@@ -67,7 +47,7 @@ aparch11 = function(x) {
       x2[i] = x2[i] + epsilon[i]; x2[j] = x2[j] - epsilon[j]
       x3[i] = x3[i] - epsilon[i]; x3[j] = x3[j] + epsilon[j]
       x4[i] = x4[i] - epsilon[i]; x4[j] = x4[j] - epsilon[j]
-      Hessian[i, j] = (aparchLLH_hessian(x1)-aparchLLH_hessian(x2)-aparchLLH_hessian(x3)+aparchLLH_hessian(x4))/
+      Hessian[i, j] = (aparchLLH(x1)-aparchLLH(x2)-aparchLLH(x3)+aparchLLH(x4))/
         (4*epsilon[i]*epsilon[j])
     }
   }
