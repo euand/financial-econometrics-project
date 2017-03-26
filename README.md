@@ -6,7 +6,7 @@ This project entails maximum likelihood estimation of an APARCH(1,1) model.
 
 The files in this GitHub repo include:
 
-A report on the model and algorithm in the file explanation.pdf \
+A report on the model and algorithm (report.pdf) \
 A function that maximises log-likelihood using a for loop in R (aparch.R) \
 A function that maximises log-likelihood using a for loop in C (aparchC.R) \
 A demo of the program in action
