@@ -61,7 +61,7 @@ APARCH.fit.C <- function(x){
   
   fit = nlminb(start = params_init, objective = llh,
                lower = lowerBounds, upper = upperBounds) # , control = list(trace=3))
-  fit$par
+
   hess <- Hessian(fit$par) 
   
   cat("Log likelihood at MLEs: ","\n")
